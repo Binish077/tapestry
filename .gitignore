@@ -1,1 +1,4 @@
 requirements.md
+.env
+FAMILY_TREE_UI_STEPS.md
+backend/data/seed.json
