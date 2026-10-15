@@ -1,122 +1,78 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import { useEffect, useState } from "react";
+import { fetchTree } from "./lib/treeApi";
+import { adaptTreeToFlow } from "./lib/treeGraph";
+import type { TreeGraph } from "./lib/treeGraph";
+import "./App.css";
+
+type TreeState =
+  | { status: "loading" }
+  | { status: "error"; message: string }
+  | { status: "empty" }
+  | { status: "success"; graph: TreeGraph };
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [treeState, setTreeState] = useState<TreeState>({ status: "loading" });
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    fetchTree(controller.signal)
+      .then((tree) => {
+        if (tree.nodes.length === 0) {
+          setTreeState({ status: "empty" });
+          return;
+        }
+
+        setTreeState({ status: "success", graph: adaptTreeToFlow(tree) });
+      })
+      .catch((error: unknown) => {
+        if (controller.signal.aborted) return;
+
+        setTreeState({
+          status: "error",
+          message:
+            error instanceof Error ? error.message : "An unknown error occurred",
+        });
+      });
+
+    return () => controller.abort();
+  }, []);
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
+    <main className="tree-page">
+      <header className="tree-header">
+        <p className="wordmark">tapestry</p>
+        <p className="motto">History, woven</p>
+      </header>
+      <section className="tree-content" aria-labelledby="tree-title">
+        <div className="section-heading">
+          <p className="eyebrow">House Targaryen</p>
+          <h1 id="tree-title">Lineage</h1>
         </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
+        {treeState.status === "loading" && (
+          <p className="tree-message" role="status">Loading family records…</p>
+        )}
+        {treeState.status === "error" && (
+          <p className="tree-message tree-error" role="alert">
+            Could not load family records: {treeState.message}
           </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
+        )}
+        {treeState.status === "empty" && (
+          <p className="tree-message" role="status">
+            No family records are available yet.
+          </p>
+        )}
+        {treeState.status === "success" && (
+          <div className="tree-message tree-summary" role="status">
+            <strong>Family records loaded</strong>
+            <span>
+              {treeState.graph.nodes.length} people · {treeState.graph.edges.length} relationships
+            </span>
+          </div>
+        )}
       </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+    </main>
+  );
 }
 
-export default App
+export default App;
