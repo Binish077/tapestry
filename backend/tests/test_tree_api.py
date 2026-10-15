@@ -59,7 +59,9 @@ def test_get_tree_returns_people_resources_and_relationships():
     edge = payload["edges"][0]
     assert edge["source_id"] == parent_id
     assert edge["target_id"] == child_id
-    assert edge["type"] == "mother_of"
+    assert edge["type"] == "parent_child"
+    assert edge["relationship_types"] == ["mother_of"]
+    assert len(edge["relationship_ids"]) == 1
     assert edge["valid_from"] == 114
     assert edge["valid_to"] is None
     assert edge["strength"] == 1.0

@@ -6,7 +6,8 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.db.session import get_db
 from app.models import Entity, EntityType, Relationship
-from app.schemas.tree import TreeEdge, TreeNode, TreeResource, TreeResponse
+from app.schemas.tree import TreeNode, TreeResource, TreeResponse
+from app.services.relationship_normalizer import normalize_relationships
 
 router = APIRouter()
 
@@ -46,16 +47,5 @@ def get_tree(session: Annotated[Session, Depends(get_db)]) -> TreeResponse:
             )
             for person in people
         ],
-        edges=[
-            TreeEdge(
-                id=relationship.id,
-                source_id=relationship.source_id,
-                target_id=relationship.target_id,
-                type=relationship.type,
-                valid_from=relationship.valid_from,
-                valid_to=relationship.valid_to,
-                strength=relationship.strength,
-            )
-            for relationship in relationships
-        ],
+        edges=normalize_relationships(relationships),
     )
